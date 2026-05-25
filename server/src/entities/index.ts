@@ -1,0 +1,7 @@
+export { UserEntity } from './user.entity';
+export { CategoryEntity } from './category.entity';
+export { DocIssueEntity } from './doc-issue.entity';
+export { DingtalkConfigEntity } from './dingtalk-config.entity';
+export { DingtalkMessageEntity } from './dingtalk-message.entity';
+export { VectorMappingEntity } from './vector-mapping.entity';
+export { SysConfigEntity } from './sys-config.entity';
