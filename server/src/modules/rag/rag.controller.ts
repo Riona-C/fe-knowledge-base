@@ -15,17 +15,24 @@ import { SearchDto } from './rag.dto';
 @ApiBearerAuth()
 @Controller('rag')
 export class RagController {
-  constructor(private readonly ragService: RagService) {}
+  constructor(private readonly ragService: RagService) { }
 
   @Post('search')
   @ApiOperation({ summary: '智能检索相似问题' })
   search(@Body() dto: SearchDto) {
-    return this.ragService.search(dto.query);
+    return this.ragService.search(dto.query, dto.topK);
+  }
+
+  @Roles('admin')
+  @Post('sync/all')
+  @ApiOperation({ summary: '全量同步所有已发布文档到向量库' })
+  syncAll() {
+    return this.ragService.syncAll();
   }
 
   @Roles('admin')
   @Post('sync/:docId')
-  @ApiOperation({ summary: '手动同步文档到向量库' })
+  @ApiOperation({ summary: '手动同步单篇文档到向量库' })
   syncDoc(@Param('docId', ParseIntPipe) docId: number) {
     return this.ragService.syncDoc(docId);
   }

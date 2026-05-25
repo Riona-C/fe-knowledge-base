@@ -40,6 +40,18 @@ export class RagChromaService implements OnModuleInit {
     }
   }
 
+  /** 懒重连：若初始化时 ChromaDB 未就绪，首次调用时自动重试 */
+  private async ensureCollectionAsync(): Promise<Collection> {
+    if (this.collection) {
+      return this.collection;
+    }
+    const { chromaHost, chromaPort, chromaCollection } = this.config.rag;
+    this.client = new ChromaClient({ path: `http://${chromaHost}:${chromaPort}` });
+    this.collection = await this.client.getOrCreateCollection({ name: chromaCollection });
+    this.logger.log('ChromaDB 重连成功');
+    return this.collection;
+  }
+
   private ensureCollection(): Collection {
     if (!this.collection) {
       throw new Error('ChromaDB 未连接，RAG 功能不可用');
@@ -52,7 +64,7 @@ export class RagChromaService implements OnModuleInit {
     if (docs.length === 0) {
       return;
     }
-    const collection = this.ensureCollection();
+    const collection = await this.ensureCollectionAsync();
     await collection.add({
       ids: docs.map((d) => d.id),
       embeddings: docs.map((d) => d.embedding),
@@ -66,7 +78,7 @@ export class RagChromaService implements OnModuleInit {
     embedding: number[],
     topK: number,
   ): Promise<ChromaQueryResult[]> {
-    const collection = this.ensureCollection();
+    const collection = await this.ensureCollectionAsync();
     const result = await collection.query({
       queryEmbeddings: [embedding],
       nResults: topK,
@@ -90,7 +102,7 @@ export class RagChromaService implements OnModuleInit {
     if (ids.length === 0) {
       return;
     }
-    const collection = this.ensureCollection();
+    const collection = await this.ensureCollectionAsync();
     await collection.delete({ ids });
   }
 }

@@ -50,6 +50,63 @@ npm run dev
 - 后端 API：`http://localhost:3000/api`
 - Swagger 文档：`http://localhost:3000/api/docs`
 
+## RAG 智能检索上线操作
+
+> 首次部署或向量库为空时，必须按顺序完成以下步骤，智能检索才能正常工作。
+
+### 第一步：配置 Embedding API Key
+
+编辑 `server/.env`，填入通义千问 DashScope API Key：
+
+```bash
+RAG_EMBEDDING_MODEL=text-embedding-v3
+RAG_EMBEDDING_API_KEY=sk-xxxxxxxxxxxx        # ← 必填，否则向量化失败
+RAG_EMBEDDING_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+```
+
+申请地址：[阿里云 DashScope 控制台](https://dashscope.aliyun.com) → API Key 管理
+
+### 第二步：启动 ChromaDB 服务
+
+```bash
+# Docker Compose 整体启动（推荐）
+docker compose up -d chroma
+
+# 验证 ChromaDB 是否正常（返回 {"nanosecond heartbeat": ...} 即成功）
+curl http://localhost:8000/api/v1/heartbeat
+```
+
+### 第三步：全量同步现有文档到向量库
+
+服务启动后，调用一次全量同步接口，将所有已发布文档写入 ChromaDB：
+
+```bash
+# 先登录获取管理员 Token
+TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}' | jq -r '.data.accessToken')
+
+# 执行全量同步
+curl -X POST http://localhost:3000/api/rag/sync/all \
+  -H "Authorization: Bearer $TOKEN"
+# 返回示例：{"total":50,"success":48,"failed":2}
+```
+
+后续文档审核通过后会**自动**触发向量同步，无需再手动执行。
+
+### 第四步：验证智能检索
+
+```bash
+curl -X POST http://localhost:3000/api/rag/search \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"query":"页面白屏问题"}'
+```
+
+返回 `results` 数组非空即表示向量库已就绪，前端「智能检索」页面可正常使用。
+
+---
+
 ## 项目结构
 
 ```

@@ -99,7 +99,10 @@ export class DocService {
     doc.auditRemark = dto.auditRemark ?? null;
     doc.auditUserId = auditUserId;
     doc.auditTime = new Date();
-    return this.docRepo.save(doc);
+    const saved = await this.docRepo.save(doc);
+    // 审核状态变更后同步向量库（通过/驳回均需重新同步）
+    this.eventEmitter.emit('doc.updated', { docId: id });
+    return saved;
   }
 
   /** 批量软删除 */
@@ -128,7 +131,11 @@ export class DocService {
       doc.auditUserId = auditUserId;
       doc.auditTime = now;
     }
-    return this.docRepo.save(docs);
+    const saved = await this.docRepo.save(docs);
+    for (const doc of docs) {
+      this.eventEmitter.emit('doc.updated', { docId: doc.id });
+    }
+    return saved;
   }
 
   /** 文档统计信息（首页仪表盘） */

@@ -13,7 +13,7 @@ import { RagChromaService } from './rag-chroma.service';
 import { RagEmbeddingService } from './rag-embedding.service';
 
 const CACHE_PREFIX = 'rag:search:';
-const CACHE_TTL = 3600;
+const CACHE_TTL_DEFAULT = 1800;
 
 @Injectable()
 export class RagService {
@@ -44,15 +44,16 @@ export class RagService {
   }
 
   /** 智能检索相似问题 */
-  async search(query: string) {
-    const cacheKey = CACHE_PREFIX + createHash('md5').update(query).digest('hex');
+  async search(query: string, topKOverride?: number) {
+    const cacheKey = CACHE_PREFIX + createHash('md5').update(`${query}:${topKOverride ?? ''}`).digest('hex');
     const cached = await this.redis.get(cacheKey);
     if (cached) {
       return JSON.parse(cached);
     }
 
-    const topK = await this.getConfigNumber('rag.top_k', 5);
-    const rerankEnabled = await this.getConfigBoolean('rag.rerank_enabled', false);
+    const topK = topKOverride ?? await this.getConfigNumber('rag_search_top_k', 5);
+    const rerankEnabled = await this.getConfigBoolean('rag_rerank_enabled', false);
+    const cacheTtl = await this.getConfigNumber('rag_cache_ttl', CACHE_TTL_DEFAULT);
 
     const embedding = await this.embeddingService.embed(query);
     let results = await this.chromaService.queryByEmbedding(embedding, topK);
@@ -72,8 +73,8 @@ export class RagService {
     const docs =
       docIds.length > 0
         ? await this.docRepo.find({
-            where: { id: In(docIds), deleted: 0, status: 1 },
-          })
+          where: { id: In(docIds), deleted: 0, status: 1 },
+        })
         : [];
 
     const response = {
@@ -82,11 +83,11 @@ export class RagService {
         vectorId: r.id,
         distance: r.distance,
         chunkContent: r.content,
-        doc: docs.find((d) => d.id === Number(r.metadata?.docId)) ?? null,
+        doc: docs.find((d) => Number(d.id) === Number(r.metadata?.docId)) ?? null,
       })),
     };
 
-    await this.redis.setex(cacheKey, CACHE_TTL, JSON.stringify(response));
+    await this.redis.setex(cacheKey, cacheTtl, JSON.stringify(response));
     return response;
   }
 
@@ -100,6 +101,25 @@ export class RagService {
     }
     await this.removeDoc(docId);
     await this.indexDoc(doc);
+  }
+
+  /** 全量同步所有已发布文档到向量库（初始化/重建用） */
+  async syncAll(): Promise<{ total: number; success: number; failed: number }> {
+    const docs = await this.docRepo.find({ where: { deleted: 0, status: 1 } });
+    let success = 0;
+    let failed = 0;
+    for (const doc of docs) {
+      try {
+        await this.removeDoc(doc.id);
+        await this.indexDoc(doc);
+        success++;
+      } catch (err) {
+        this.logger.error(`全量同步失败 docId=${doc.id}`, err);
+        failed++;
+      }
+    }
+    this.logger.log(`全量同步完成 total=${docs.length} success=${success} failed=${failed}`);
+    return { total: docs.length, success, failed };
   }
 
   /** 手动删除文档向量 */
