@@ -53,6 +53,11 @@ export class QueryUserDto extends PaginationDto {
   @IsString()
   username?: string;
 
+  @ApiPropertyOptional({ description: '关键词（搜索用户名/昵称）' })
+  @IsOptional()
+  @IsString()
+  keyword?: string;
+
   @ApiPropertyOptional({ description: '状态' })
   @IsOptional()
   @Type(() => Number)

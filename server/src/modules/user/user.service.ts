@@ -23,10 +23,12 @@ export class UserService {
       .createQueryBuilder('user')
       .where('user.deleted = 0');
 
-    if (query.username) {
-      qb.andWhere('user.username LIKE :username', {
-        username: `%${query.username}%`,
-      });
+    const searchKw = query.keyword || query.username;
+    if (searchKw) {
+      qb.andWhere(
+        '(user.username LIKE :kw OR user.nickName LIKE :kw)',
+        { kw: `%${searchKw}%` },
+      );
     }
     if (query.status !== undefined) {
       qb.andWhere('user.status = :status', { status: query.status });
