@@ -9,9 +9,9 @@
         :default-active="activeMenu"
         :collapse="appStore.sidebarCollapsed"
         router
-        background-color="#001529"
-        text-color="rgba(255,255,255,0.75)"
-        active-text-color="#409eff"
+        background-color="transparent"
+        text-color="rgba(203,213,225,0.85)"
+        active-text-color="#60a5fa"
       >
         <el-menu-item index="/home">
           <el-icon><HomeFilled /></el-icon>
@@ -130,39 +130,126 @@ function handleLogout() {
 }
 
 .sidebar {
-  background: #001529;
-  transition: width 0.3s;
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
 }
 
 .logo {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  height: 60px;
+  gap: 10px;
+  height: 64px;
   color: #fff;
   cursor: pointer;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.logo:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.logo :deep(.el-icon) {
+  color: #60a5fa !important;
+  filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.5));
 }
 
 .logo-text {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
+  background: linear-gradient(135deg, #93c5fd, #c4b5fd);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.5px;
 }
 
-.el-menu {
-  border-right: none;
+:deep(.el-menu) {
+  background: transparent !important;
+  border-right: none !important;
+  padding: 8px 0;
+}
+
+:deep(.el-menu-item) {
+  margin: 2px 10px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  height: 42px;
+  line-height: 42px;
+}
+
+:deep(.el-menu-item:hover) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #e2e8f0 !important;
+}
+
+:deep(.el-menu-item.is-active) {
+  background: linear-gradient(90deg, rgba(96, 165, 250, 0.22), rgba(96, 165, 250, 0.05)) !important;
+  color: #60a5fa !important;
+  font-weight: 600;
+  position: relative;
+}
+
+:deep(.el-menu-item.is-active::after) {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  background: linear-gradient(180deg, #60a5fa, #a78bfa);
+  border-radius: 2px 0 0 2px;
+}
+
+:deep(.el-sub-menu__title) {
+  margin: 2px 10px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+:deep(.el-sub-menu__title:hover) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #e2e8f0 !important;
+}
+
+:deep(.el-sub-menu .el-menu) {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border-radius: 8px;
+  margin: 4px 10px;
+  padding: 4px 0 !important;
+}
+
+:deep(.el-sub-menu .el-menu-item) {
+  margin: 2px 8px;
+  height: 38px;
+  line-height: 38px;
+  font-size: 13px;
+  padding-left: 16px !important;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fff;
-  border-bottom: 1px solid #e8e8e8;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 1px 16px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 0 24px;
+  height: 60px !important;
+  position: sticky;
+  top: 0;
+  z-index: 9;
 }
 
 .header-left {
@@ -172,13 +259,23 @@ function handleLogout() {
 }
 
 .collapse-btn {
-  font-size: 20px;
+  font-size: 18px;
   cursor: pointer;
-  color: #606266;
+  color: #94a3b8;
+  transition: all 0.2s;
+  padding: 7px;
+  border-radius: 8px;
 }
 
 .collapse-btn:hover {
-  color: #409eff;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+}
+
+:deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner) {
+  color: #1e293b;
+  font-weight: 600;
+  font-size: 15px;
 }
 
 .header-right {
@@ -187,13 +284,22 @@ function handleLogout() {
   gap: 12px;
 }
 
-.username {
-  color: #303133;
+:deep(.header-right .el-avatar) {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+  font-weight: 700;
   font-size: 14px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+}
+
+.username {
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .main-content {
-  background: #f0f2f5;
-  padding: 20px;
+  background: #f1f5f9;
+  padding: 24px;
+  overflow: auto;
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
   <div class="home-page">
     <el-row :gutter="20" class="stat-row">
-      <el-col :span="6" v-for="item in statCards" :key="item.key">
+      <el-col :span="6" v-for="(item, index) in statCards" :key="item.key" :class="`stat-col-${index}`">
         <el-card shadow="hover" class="stat-card">
           <div class="stat-content">
             <el-icon :size="36" :color="item.color"><component :is="item.icon" /></el-icon>
@@ -98,38 +98,87 @@ onMounted(async () => {
 .home-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
-.stat-card {
-  border-radius: 8px;
+/* 各统计卡片渐变色 */
+.stat-col-0 .stat-card,
+.stat-col-1 .stat-card,
+.stat-col-2 .stat-card,
+.stat-col-3 .stat-card {
+  border: none !important;
+  border-radius: 16px !important;
+  transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+}
+
+.stat-col-0 .stat-card:hover,
+.stat-col-1 .stat-card:hover,
+.stat-col-2 .stat-card:hover,
+.stat-col-3 .stat-card:hover {
+  transform: translateY(-4px);
+}
+
+.stat-col-0 .stat-card {
+  background: linear-gradient(135deg, #1d4ed8 0%, #60a5fa 100%) !important;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35) !important;
+}
+
+.stat-col-1 .stat-card {
+  background: linear-gradient(135deg, #92400e 0%, #fbbf24 100%) !important;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35) !important;
+}
+
+.stat-col-2 .stat-card {
+  background: linear-gradient(135deg, #065f46 0%, #34d399 100%) !important;
+  box-shadow: 0 8px 24px rgba(52, 211, 153, 0.35) !important;
+}
+
+.stat-col-3 .stat-card {
+  background: linear-gradient(135deg, #5b21b6 0%, #c084fc 100%) !important;
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.35) !important;
 }
 
 .stat-content {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
+  padding: 6px 0;
+}
+
+.stat-content :deep(.el-icon) {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 14px;
+  padding: 12px;
+  width: 60px !important;
+  height: 60px !important;
+  color: #fff !important;
+  flex-shrink: 0;
 }
 
 .stat-value {
-  font-size: 28px;
-  font-weight: 600;
-  color: #303133;
+  font-size: 36px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  letter-spacing: -1px;
 }
 
 .stat-label {
-  font-size: 14px;
-  color: #909399;
-  margin-top: 4px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.72);
+  margin-top: 8px;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-weight: 600;
+  font-size: 15px;
+  color: #1e293b;
 }
 
 .recent-card {
-  border-radius: 8px;
+  border-radius: 16px !important;
 }
 </style>

@@ -15,7 +15,7 @@ export class UserService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
-  ) {}
+  ) { }
 
   /** 分页查询用户列表 */
   async list(query: QueryUserDto) {

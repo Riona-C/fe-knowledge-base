@@ -66,47 +66,51 @@ axiosInstance.interceptors.response.use(
       const refresh = getRefreshToken()
       if (!refresh) {
         clearTokens()
-        router.push('/login')
-        return Promise.reject(error)
-      }
-
-      if (isRefreshing) {
-        return new Promise((resolve) => {
-          pendingQueue.push((token: string) => {
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${token}`
-            }
-            resolve(axiosInstance(originalRequest))
+        // 在登录页说明是用户名/密码错误，不跳转，让下方统一 toast 处理
+        if (router.currentRoute.value.path !== '/login') {
+          ElMessage.error('登录已过期，请重新登录')
+          router.push('/login')
+          return Promise.reject(error)
+        }
+      } else {
+        if (isRefreshing) {
+          return new Promise((resolve) => {
+            pendingQueue.push((token: string) => {
+              if (originalRequest.headers) {
+                originalRequest.headers.Authorization = `Bearer ${token}`
+              }
+              resolve(axiosInstance(originalRequest))
+            })
           })
-        })
-      }
-
-      originalRequest._retry = true
-      isRefreshing = true
-
-      try {
-        const res = await axios.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
-          '/api/auth/refresh',
-          { refreshToken: refresh }
-        )
-        if (res.data.code !== 0) {
-          throw new Error(res.data.message)
         }
-        const { accessToken, refreshToken: newRefresh } = res.data.data
-        setAccessToken(accessToken)
-        setRefreshToken(newRefresh)
-        processQueue(accessToken)
-        if (originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`
+
+        originalRequest._retry = true
+        isRefreshing = true
+
+        try {
+          const res = await axios.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
+            '/api/auth/refresh',
+            { refreshToken: refresh }
+          )
+          if (res.data.code !== 0) {
+            throw new Error(res.data.message)
+          }
+          const { accessToken, refreshToken: newRefresh } = res.data.data
+          setAccessToken(accessToken)
+          setRefreshToken(newRefresh)
+          processQueue(accessToken)
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${accessToken}`
+          }
+          return axiosInstance(originalRequest)
+        } catch {
+          clearTokens()
+          ElMessage.error('登录已过期，请重新登录')
+          router.push('/login')
+          return Promise.reject(error)
+        } finally {
+          isRefreshing = false
         }
-        return axiosInstance(originalRequest)
-      } catch {
-        clearTokens()
-        ElMessage.error('登录已过期，请重新登录')
-        router.push('/login')
-        return Promise.reject(error)
-      } finally {
-        isRefreshing = false
       }
     }
 

@@ -105,76 +105,153 @@ async function handleSearch() {
 
 <style scoped>
 .rag-page {
-  max-width: 800px;
+  max-width: 840px;
   margin: 0 auto;
 }
 
 .search-hero {
   text-align: center;
-  padding: 40px 0 32px;
+  padding: 48px 0 36px;
+  position: relative;
+}
+
+.search-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 640px;
+  height: 280px;
+  background: radial-gradient(ellipse, rgba(59, 130, 246, 0.07) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .search-hero h1 {
-  font-size: 32px;
-  color: #303133;
-  margin-bottom: 8px;
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .search-hero p {
-  color: #909399;
+  color: #64748b;
   margin-bottom: 32px;
+  font-size: 15px;
 }
 
 .search-box {
-  max-width: 600px;
+  max-width: 640px;
   margin: 0 auto;
 }
 
+:deep(.search-box .el-input__wrapper) {
+  border-radius: 28px !important;
+  box-shadow: 0 0 0 1px #dde3ef inset, 0 4px 16px rgba(15, 23, 42, 0.06) !important;
+  padding: 0 6px 0 20px !important;
+  transition: all 0.25s !important;
+}
+
+:deep(.search-box .el-input__wrapper:hover),
+:deep(.search-box .el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 2px #3b82f6 inset, 0 8px 24px rgba(59, 130, 246, 0.12) !important;
+}
+
+:deep(.search-box .el-input-group__append) {
+  background: linear-gradient(135deg, #3b82f6, #7c3aed) !important;
+  border: none !important;
+  border-radius: 0 24px 24px 0 !important;
+  padding: 0 20px !important;
+  color: #fff !important;
+  font-weight: 600;
+}
+
+:deep(.search-box .el-input-group__append .el-button) {
+  border: none !important;
+  background: transparent !important;
+  color: #fff !important;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+:deep(.search-box .el-input-group__append .el-icon) {
+  color: #fff !important;
+}
+
 .results-section {
-  margin-top: 24px;
+  margin-top: 28px;
+}
+
+.result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .result-item {
   display: flex;
-  gap: 16px;
-  padding: 20px;
+  gap: 18px;
+  padding: 22px;
   background: #fff;
-  border-radius: 8px;
-  margin-bottom: 12px;
+  border-radius: 14px;
   cursor: pointer;
-  transition: box-shadow 0.2s;
-  border: 1px solid #ebeef5;
+  transition: all 0.25s;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
 .result-item:hover {
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
-  border-color: #409eff;
+  box-shadow: 0 8px 28px rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
 }
 
 .result-rank {
-  width: 32px;
-  height: 32px;
-  background: #409eff;
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, #3b82f6, #7c3aed);
   color: #fff;
-  border-radius: 50%;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 15px;
   flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+}
+
+.result-content {
+  flex: 1;
+  min-width: 0;
 }
 
 .result-title {
-  margin: 0 0 8px;
-  font-size: 18px;
-  color: #409eff;
+  margin: 0 0 10px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d4ed8;
+  transition: color 0.2s;
+}
+
+.result-item:hover .result-title {
+  color: #1e40af;
 }
 
 .result-summary {
   margin: 4px 0;
-  color: #606266;
+  color: #475569;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.65;
+}
+
+.result-summary strong {
+  color: #334155;
+  font-weight: 600;
 }
 
 .result-footer {
@@ -182,13 +259,17 @@ async function handleSearch() {
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .score {
   margin-left: auto;
-  color: #67c23a;
+  background: linear-gradient(135deg, #059669, #34d399);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 700;
+  letter-spacing: 0.3px;
 }
 </style>
