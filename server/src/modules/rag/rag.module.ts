@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CategoryEntity } from '../../entities/category.entity';
 import { DocIssueEntity } from '../../entities/doc-issue.entity';
 import { SysConfigEntity } from '../../entities/sys-config.entity';
 import { VectorMappingEntity } from '../../entities/vector-mapping.entity';
@@ -15,10 +16,11 @@ import { RagService } from './rag.service';
       VectorMappingEntity,
       DocIssueEntity,
       SysConfigEntity,
+      CategoryEntity,
     ]),
   ],
   controllers: [RagController],
   providers: [RagService, RagEmbeddingService, RagChromaService],
-  exports: [RagService],
+  exports: [RagService, RagChromaService],
 })
 export class RagModule {}

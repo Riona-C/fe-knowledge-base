@@ -1,0 +1,115 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5] [cursor=pointer]:
+      - img [ref=e7]
+      - generic [ref=e10]: 前端知识库
+    - menubar [ref=e11]:
+      - menuitem "首页" [ref=e12] [cursor=pointer]:
+        - img [ref=e14]
+        - generic [ref=e16]: 首页
+      - menuitem "知识库" [ref=e17]:
+        - generic [ref=e18] [cursor=pointer]:
+          - img [ref=e20]
+          - generic [ref=e22]: 知识库
+          - img [ref=e24]
+      - menuitem "智能检索" [ref=e26] [cursor=pointer]:
+        - img [ref=e28]
+        - generic [ref=e30]: 智能检索
+      - menuitem "文档审核" [ref=e31] [cursor=pointer]:
+        - img [ref=e33]
+        - generic [ref=e35]: 文档审核
+      - menuitem "钉钉采集" [ref=e36]:
+        - generic [ref=e37] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e42]: 钉钉采集
+          - img [ref=e44]
+      - menuitem "系统管理" [ref=e46]:
+        - generic [ref=e47] [cursor=pointer]:
+          - img [ref=e49]
+          - generic [ref=e51]: 系统管理
+          - img [ref=e53]
+  - generic [ref=e55]:
+    - generic [ref=e56]:
+      - generic [ref=e57]:
+        - img [ref=e59] [cursor=pointer]
+        - navigation "面包屑" [ref=e61]:
+          - link "智能检索" [ref=e63]
+      - generic [ref=e64]:
+        - generic [ref=e65]: 系
+        - generic [ref=e66]: 系统管理员
+        - button "退出" [ref=e67] [cursor=pointer]:
+          - generic [ref=e68]: 退出
+    - main [ref=e69]:
+      - generic [ref=e70]:
+        - generic [ref=e71]:
+          - heading "智能检索" [level=1] [ref=e72]
+          - paragraph [ref=e73]: 输入您的问题，AI 将从知识库中为您找到最相关的解决方案
+          - radiogroup "radio-group" [ref=e74]:
+            - generic [ref=e75]:
+              - radio "文档检索" [ref=e76]
+              - generic [ref=e77] [cursor=pointer]: 文档检索
+            - generic [ref=e78]:
+              - radio "对话问答" [checked] [ref=e79]
+              - generic [ref=e80] [cursor=pointer]: 对话问答
+          - generic [ref=e82]:
+            - generic [ref=e83]:
+              - textbox "例如：Vue3 如何实现路由守卫？" [active] [ref=e84]: 页面白屏问题
+              - img [ref=e94] [cursor=pointer]
+            - button "提问" [ref=e92] [cursor=pointer]:
+              - generic [ref=e88]:
+                - img [ref=e90]
+                - text: 提问
+        - generic [ref=e97]:
+          - generic [ref=e102]:
+            - paragraph [ref=e103]: 针对页面白屏问题，以下是一些可能的解决方案：
+            - list [ref=e104]:
+              - listitem [ref=e105]:
+                - paragraph [ref=e106]:
+                  - strong [ref=e107]: iOS12及以下系统页面显示白屏问题
+                  - text: ：
+                - list [ref=e108]:
+                  - listitem [ref=e109]: 确保项目中安装了babel解析ES6语法的插件。
+                  - listitem [ref=e110]:
+                    - text: 在
+                    - code [ref=e111]: babel.config.js
+                    - text: 中配置babel，确保ES6语法被正确编译。
+                  - listitem [ref=e112]:
+                    - text: 检查并注释掉
+                    - code [ref=e113]: index.html
+                    - text: 中注入的性能上报脚本，特别是含有ES6语法的部分。
+                  - listitem [ref=e114]: 重新打包发布项目 [1]。
+              - listitem [ref=e115]:
+                - paragraph [ref=e116]:
+                  - strong [ref=e117]: iOS低端机Safari 14以下机型页面白屏问题
+                  - text: ：
+                - list [ref=e118]:
+                  - listitem [ref=e119]: 添加babel插件来解决optional chaining语法没有被编译的问题 [2]。
+              - listitem [ref=e120]:
+                - paragraph [ref=e121]:
+                  - strong [ref=e122]: iOS Safari Webview 首屏渲染问题
+                  - text: ：
+                - list [ref=e123]:
+                  - listitem [ref=e124]: 在页面中填充可见文本，长度应在201个非空字符以上，以强制webview进行渲染。
+                  - listitem [ref=e125]: 使用0宽空格填充没有高度的元素，提前显示页面。
+                  - listitem [ref=e126]:
+                    - text: 使用封装好的插件，在build过程中插入0宽字符。具体步骤包括使用npm安装插件
+                    - code [ref=e127]: "@sc/vue-cli-plugin-safari-fix"
+                    - text: ，并在项目中引入并配置插件 [3]。
+              - listitem [ref=e128]:
+                - paragraph [ref=e129]:
+                  - strong [ref=e130]: iOS低端机滚动列表花屏问题
+                  - text: ：
+                - list [ref=e131]:
+                  - listitem [ref=e132]: 减少不必要的transform和opacity动画层。
+                  - listitem [ref=e133]:
+                    - text: 使用
+                    - code [ref=e134]: will-change
+                    - text: 属性精确控制合成层 [4]。
+            - paragraph [ref=e135]: 对于低端安卓设备页面花屏问题，由于文档中没有提供具体的解决方案，建议进一步调查和测试以确定问题原因和解决方案。
+          - generic [ref=e136]:
+            - generic [ref=e137]: 参考文档：
+            - generic [ref=e139] [cursor=pointer]: iOS12及以下系统页面显示白屏问题
+            - generic [ref=e141] [cursor=pointer]: iOS低端机Safari 14以下机型页面白屏问题
+            - generic [ref=e143] [cursor=pointer]: iOS Safari Webview 首屏渲染问题
+            - generic [ref=e145] [cursor=pointer]: iOS低端机滚动列表花屏问题
+            - generic [ref=e147] [cursor=pointer]: 低端安卓设备页面花屏问题

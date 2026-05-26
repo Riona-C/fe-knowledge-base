@@ -1,0 +1,10 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - img [ref=e8]
+    - heading "前端知识库" [level=1] [ref=e11]
+    - paragraph [ref=e12]: 团队知识沉淀与智能检索平台
+  - generic [ref=e13]:
+    - textbox "请输入用户名" [ref=e19]
+    - textbox "请输入密码" [ref=e26]
+    - button "登 录" [ref=e29] [cursor=pointer]:
+      - generic [ref=e30]: 登 录

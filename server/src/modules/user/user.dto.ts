@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 /** 创建用户 DTO */
@@ -23,7 +23,7 @@ export class CreateUserDto {
 
   @ApiProperty({ description: '角色', example: 'member' })
   @IsNotEmpty({ message: '角色不能为空' })
-  @IsString()
+  @IsIn(['admin', 'member'], { message: '角色仅支持 admin 或 member' })
   role: string;
 }
 
@@ -36,7 +36,7 @@ export class UpdateUserDto {
 
   @ApiPropertyOptional({ description: '角色' })
   @IsOptional()
-  @IsString()
+  @IsIn(['admin', 'member'], { message: '角色仅支持 admin 或 member' })
   role?: string;
 
   @ApiPropertyOptional({ description: '状态：0-禁用 1-启用' })

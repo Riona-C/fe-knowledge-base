@@ -8,6 +8,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  MaxLength,
 } from 'class-validator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
@@ -26,11 +27,13 @@ export class CreateDocDto {
   @ApiProperty({ description: '问题描述' })
   @IsNotEmpty({ message: '问题描述不能为空' })
   @IsString()
+  @MaxLength(50000, { message: '问题描述不能超过 50000 字' })
   problem: string;
 
   @ApiProperty({ description: '解决方案' })
   @IsNotEmpty({ message: '解决方案不能为空' })
   @IsString()
+  @MaxLength(50000, { message: '解决方案不能超过 50000 字' })
   solution: string;
 
   @ApiPropertyOptional({ description: '标签，逗号分隔' })
@@ -82,7 +85,7 @@ export class QueryDocDto extends PaginationDto {
   @IsInt()
   status?: number;
 
-  @ApiPropertyOptional({ description: '关键词（标题模糊搜索）' })
+  @ApiPropertyOptional({ description: '关键词（标题/问题全文检索）' })
   @IsOptional()
   @IsString()
   keyword?: string;

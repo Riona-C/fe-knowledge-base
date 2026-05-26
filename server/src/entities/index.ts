@@ -5,3 +5,5 @@ export { DingtalkConfigEntity } from './dingtalk-config.entity';
 export { DingtalkMessageEntity } from './dingtalk-message.entity';
 export { VectorMappingEntity } from './vector-mapping.entity';
 export { SysConfigEntity } from './sys-config.entity';
+export { AuditLogEntity } from './audit-log.entity';
+export { DocVersionEntity } from './doc-version.entity';

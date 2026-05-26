@@ -23,7 +23,7 @@ CREATE TABLE `sys_user` (
   UNIQUE KEY `uk_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 
--- 默认管理员（密码: admin123，bcrypt 加密）
+-- 默认管理员（初始密码 admin123，部署后请立即修改）
 INSERT INTO `sys_user` (`username`, `password`, `nick_name`, `role`)
 VALUES ('admin', '$2b$10$jbebWmmsictFxaZ9uZnn8eZJPgCmCjzqXOpKw4vJ4B/C7ra6CSQ3e', '系统管理员', 'admin');
 
@@ -113,7 +113,8 @@ CREATE TABLE `rag_vector_mapping` (
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_doc` (`doc_id`),
-  KEY `idx_vector` (`vector_id`)
+  KEY `idx_vector` (`vector_id`),
+  KEY `idx_doc_chunk` (`doc_id`, `chunk_index`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='RAG向量映射表';
 
 -- 7. 系统配置表（存储 RAG 模型配置等）
@@ -140,3 +141,35 @@ INSERT INTO `sys_config` (`config_key`, `config_value`, `remark`) VALUES
 ('ai_model_name', 'qwen-plus', 'AI大模型名称'),
 ('ai_api_key', '', 'AI大模型API Key'),
 ('ai_base_url', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'AI大模型API地址');
+
+-- 8. 操作审计日志
+CREATE TABLE `sys_audit_log` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` bigint NOT NULL COMMENT '操作人ID',
+  `action` varchar(50) NOT NULL COMMENT '操作类型',
+  `resource_type` varchar(50) NOT NULL COMMENT '资源类型',
+  `resource_id` bigint NOT NULL DEFAULT 0 COMMENT '资源ID',
+  `detail` varchar(500) DEFAULT NULL COMMENT '详情',
+  `ip_address` varchar(64) DEFAULT NULL COMMENT 'IP',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user` (`user_id`),
+  KEY `idx_action` (`action`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='操作审计日志';
+
+-- 9. 文档版本历史
+CREATE TABLE `doc_version` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `doc_id` bigint NOT NULL COMMENT '文档ID',
+  `version_no` int NOT NULL COMMENT '版本号',
+  `title` varchar(200) NOT NULL,
+  `problem` longtext,
+  `solution` longtext,
+  `tags` varchar(500) DEFAULT NULL,
+  `category_id` bigint NOT NULL,
+  `editor_user_id` bigint NOT NULL COMMENT '编辑人',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_doc_version` (`doc_id`, `version_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文档版本历史';

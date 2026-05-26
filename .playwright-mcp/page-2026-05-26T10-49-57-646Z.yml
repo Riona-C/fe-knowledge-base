@@ -1,0 +1,58 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5] [cursor=pointer]:
+      - img [ref=e7]
+      - generic [ref=e10]: 前端知识库
+    - menubar [ref=e11]:
+      - menuitem "首页" [ref=e12] [cursor=pointer]:
+        - img [ref=e14]
+        - generic [ref=e16]: 首页
+      - menuitem "知识库" [ref=e17]:
+        - generic [ref=e18] [cursor=pointer]:
+          - img [ref=e20]
+          - generic [ref=e22]: 知识库
+          - img [ref=e24]
+      - menuitem "智能检索" [ref=e26] [cursor=pointer]:
+        - img [ref=e28]
+        - generic [ref=e30]: 智能检索
+      - menuitem "文档审核" [ref=e31] [cursor=pointer]:
+        - img [ref=e33]
+        - generic [ref=e35]: 文档审核
+      - menuitem "钉钉采集" [ref=e36]:
+        - generic [ref=e37] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e42]: 钉钉采集
+          - img [ref=e44]
+      - menuitem "系统管理" [ref=e46]:
+        - generic [ref=e47] [cursor=pointer]:
+          - img [ref=e49]
+          - generic [ref=e51]: 系统管理
+          - img [ref=e53]
+  - generic [ref=e55]:
+    - generic [ref=e56]:
+      - generic [ref=e57]:
+        - img [ref=e59] [cursor=pointer]
+        - navigation "面包屑" [ref=e61]:
+          - link "智能检索" [ref=e63]
+      - generic [ref=e64]:
+        - generic [ref=e65]: 系
+        - generic [ref=e66]: 系统管理员
+        - button "退出" [ref=e67] [cursor=pointer]:
+          - generic [ref=e68]: 退出
+    - main [ref=e69]:
+      - generic [ref=e71]:
+        - heading "智能检索" [level=1] [ref=e72]
+        - paragraph [ref=e73]: 输入您的问题，AI 将从知识库中为您找到最相关的解决方案
+        - radiogroup "radio-group" [ref=e74]:
+          - generic [ref=e75]:
+            - radio "文档检索" [checked] [ref=e76]
+            - generic [ref=e77] [cursor=pointer]: 文档检索
+          - generic [ref=e78]:
+            - radio "对话问答" [ref=e79]
+            - generic [ref=e80] [cursor=pointer]: 对话问答
+        - generic [ref=e82]:
+          - textbox "例如：Vue3 如何实现路由守卫？" [ref=e84]
+          - button "搜索" [ref=e87] [cursor=pointer]:
+            - generic [ref=e88]:
+              - img [ref=e90]
+              - text: 搜索

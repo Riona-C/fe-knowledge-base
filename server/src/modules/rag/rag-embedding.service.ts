@@ -12,6 +12,7 @@ export class RagEmbeddingService {
     this.client = new OpenAI({
       apiKey: config.rag.embeddingApiKey,
       baseURL: config.rag.embeddingBaseUrl,
+      timeout: 60000,
     });
     this.model = config.rag.embeddingModel;
   }

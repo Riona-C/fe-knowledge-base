@@ -6,6 +6,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TerminusModule } from '@nestjs/terminus';
 import { ConfigModule, APP_CONFIG, AppConfig } from './config';
 import { winstonModule } from './config/winston.config';
+import { RedisModule } from './common/providers/redis.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -17,6 +18,8 @@ import {
   DingtalkMessageEntity,
   VectorMappingEntity,
   SysConfigEntity,
+  AuditLogEntity,
+  DocVersionEntity,
 } from './entities';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
@@ -25,14 +28,14 @@ import { DocModule } from './modules/doc/doc.module';
 import { RagModule } from './modules/rag/rag.module';
 import { DingtalkModule } from './modules/dingtalk/dingtalk.module';
 import { HealthModule } from './modules/health/health.module';
+import { AuditModule } from './modules/audit/audit.module';
 
 @Module({
   imports: [
-    // 环境变量配置
     ConfigModule,
-    // Winston 日志
+    RedisModule,
+    AuditModule,
     winstonModule(),
-    // MySQL 数据库
     TypeOrmModule.forRootAsync({
       inject: [APP_CONFIG],
       useFactory: (config: AppConfig) => ({
@@ -50,24 +53,22 @@ import { HealthModule } from './modules/health/health.module';
           DingtalkMessageEntity,
           VectorMappingEntity,
           SysConfigEntity,
+          AuditLogEntity,
+          DocVersionEntity,
         ],
         synchronize: false,
         timezone: '+08:00',
         charset: 'utf8mb4',
       }),
     }),
-    // 事件总线
     EventEmitterModule.forRoot(),
-    // 接口限流：60 秒内最多 100 次请求
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
         limit: 100,
       },
     ]),
-    // 健康检查
     TerminusModule,
-    // 业务模块
     AuthModule,
     UserModule,
     CategoryModule,
@@ -77,22 +78,18 @@ import { HealthModule } from './modules/health/health.module';
     HealthModule,
   ],
   providers: [
-    // 全局 JWT 认证守卫
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
-    // 全局角色守卫
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
     },
-    // 全局限流守卫
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
-    // 全局响应包装拦截器
     {
       provide: APP_INTERCEPTOR,
       useClass: TransformInterceptor,

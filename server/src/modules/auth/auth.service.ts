@@ -53,8 +53,8 @@ export class AuthService {
     return this.generateTokens(user);
   }
 
-  /** 刷新访问令牌 */
-  async refresh(refreshToken: string): Promise<{ accessToken: string }> {
+  /** 刷新访问令牌（轮换 refreshToken） */
+  async refresh(refreshToken: string): Promise<TokenPair> {
     try {
       const payload = this.jwtService.verify<TokenPayload>(refreshToken);
       if (payload.type !== 'refresh') {
@@ -68,11 +68,7 @@ export class AuthService {
         throw new UnauthorizedException('用户不存在或已被禁用');
       }
 
-      const accessToken = this.jwtService.sign(
-        { sub: user.id, username: user.username, role: user.role },
-        { expiresIn: process.env.JWT_ACCESS_EXPIRES || '15m' },
-      );
-      return { accessToken };
+      return this.generateTokens(user);
     } catch {
       throw new UnauthorizedException('刷新令牌无效或已过期');
     }

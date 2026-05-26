@@ -1,12 +1,17 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DocIssueEntity } from '../../entities/doc-issue.entity';
+import { DocVersionEntity } from '../../entities/doc-version.entity';
+import { RagModule } from '../rag/rag.module';
 import { DocController } from './doc.controller';
 import { DocService } from './doc.service';
 
 /** 问题文档模块 */
 @Module({
-  imports: [TypeOrmModule.forFeature([DocIssueEntity])],
+  imports: [
+    TypeOrmModule.forFeature([DocIssueEntity, DocVersionEntity]),
+    RagModule,
+  ],
   controllers: [DocController],
   providers: [DocService],
   exports: [DocService],

@@ -9,7 +9,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RagService } from './rag.service';
-import { SearchDto } from './rag.dto';
+import { RagChatDto, SearchDto } from './rag.dto';
 
 @ApiTags('RAG 检索')
 @ApiBearerAuth()
@@ -21,6 +21,12 @@ export class RagController {
   @ApiOperation({ summary: '智能检索相似问题' })
   search(@Body() dto: SearchDto) {
     return this.ragService.search(dto.query, dto.topK);
+  }
+
+  @Post('chat')
+  @ApiOperation({ summary: '对话式问答（检索 + 生成答案）' })
+  chat(@Body() dto: RagChatDto) {
+    return this.ragService.chat(dto.query, dto.topK ?? 5);
   }
 
   @Roles('admin')

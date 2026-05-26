@@ -97,6 +97,16 @@ export class RagChromaService implements OnModuleInit {
     }));
   }
 
+  /** 健康检查：探测 ChromaDB 是否可用 */
+  async ping(): Promise<boolean> {
+    try {
+      await this.ensureCollectionAsync();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   /** 按 ID 删除向量 */
   async deleteByIds(ids: string[]): Promise<void> {
     if (ids.length === 0) {

@@ -6,11 +6,12 @@ services:
     container_name: fk-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root123}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?请设置 DB_PASSWORD 环境变量}
       MYSQL_DATABASE: fe_knowledge
       TZ: Asia/Shanghai
-    ports:
-      - '3306:3306'
+    # 仅容器内网访问，不映射宿主机端口
+    expose:
+      - '3306'
     volumes:
       - mysql_data:/var/lib/mysql
       - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -25,12 +26,13 @@ services:
     image: redis:7-alpine
     container_name: fk-redis
     restart: unless-stopped
-    ports:
-      - '6379:6379'
+    expose:
+      - '6379'
+    command: redis-server --requirepass ${REDIS_PASSWORD:?请设置 REDIS_PASSWORD 环境变量}
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD}', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -39,8 +41,8 @@ services:
     image: chromadb/chroma:latest
     container_name: fk-chroma
     restart: unless-stopped
-    ports:
-      - '8000:8000'
+    expose:
+      - '8000'
     volumes:
       - chroma_data:/chroma/chroma
     environment:
@@ -62,14 +64,16 @@ services:
       chroma:
         condition: service_started
     environment:
+      NODE_ENV: production
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USERNAME: root
-      DB_PASSWORD: ${DB_PASSWORD:-root123}
+      DB_PASSWORD: ${DB_PASSWORD}
       DB_DATABASE: fe_knowledge
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_SECRET:-fe-knowledge-jwt-secret-key-2024}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?请设置 JWT_SECRET 环境变量}
       JWT_ACCESS_EXPIRES: 15m
       JWT_REFRESH_EXPIRES: 7d
       CHROMA_HOST: chroma

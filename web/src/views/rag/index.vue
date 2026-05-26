@@ -3,25 +3,44 @@
     <div class="search-hero">
       <h1>智能检索</h1>
       <p>输入您的问题，AI 将从知识库中为您找到最相关的解决方案</p>
+      <el-radio-group v-model="mode" class="mode-tabs">
+        <el-radio-button value="search">文档检索</el-radio-button>
+        <el-radio-button value="chat">对话问答</el-radio-button>
+      </el-radio-group>
       <div class="search-box">
         <el-input
           v-model="query"
           placeholder="例如：Vue3 如何实现路由守卫？"
           size="large"
           clearable
-          @keyup.enter="handleSearch"
+          @keyup.enter="mode === 'search' ? handleSearch() : handleChat()"
         >
           <template #append>
-            <el-button type="primary" :loading="loading" @click="handleSearch">
+            <el-button type="primary" :loading="loading" @click="mode === 'search' ? handleSearch() : handleChat()">
               <el-icon><Search /></el-icon>
-              搜索
+              {{ mode === 'search' ? '搜索' : '提问' }}
             </el-button>
           </template>
         </el-input>
       </div>
     </div>
 
-    <div v-if="searched" class="results-section" v-loading="loading">
+    <div v-if="mode === 'chat' && (loading || chatAnswer)" class="chat-answer" v-loading="loading">
+      <div v-if="!loading" class="chat-answer-body markdown-body" v-html="renderedChatAnswer" />
+      <div v-if="!loading && chatRefs.length" class="chat-refs">
+        <span>参考文档：</span>
+        <el-tag
+          v-for="ref in chatRefs"
+          :key="ref.docId"
+          class="ref-tag"
+          @click="router.push(`/doc/detail/${ref.docId}`)"
+        >
+          {{ ref.title }}
+        </el-tag>
+      </div>
+    </div>
+
+    <div v-if="mode === 'search' && searched" class="results-section" v-loading="loading">
       <div v-if="!results.length && !loading" class="empty-result">
         <el-empty description="未找到相关内容，请尝试其他关键词" />
       </div>
@@ -62,18 +81,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
-import { ragSearch } from '@/api/rag'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
+import { ragChat, ragSearch } from '@/api/rag'
 import type { RagResult } from '@/types'
 
 const router = useRouter()
+const mode = ref<'search' | 'chat'>('search')
 const query = ref('')
 const loading = ref(false)
 const searched = ref(false)
 const results = ref<RagResult[]>([])
+const chatAnswer = ref('')
+const chatRefs = ref<{ docId: number; title: string }[]>([])
+
+const renderedChatAnswer = computed(() => {
+  const html = marked.parse(chatAnswer.value || '') as string
+  return DOMPurify.sanitize(html)
+})
 
 function truncate(text: string, len: number) {
   if (!text) return ''
@@ -93,10 +122,37 @@ async function handleSearch() {
 
   loading.value = true
   searched.value = true
+  chatAnswer.value = ''
   try {
     results.value = await ragSearch({ query: query.value.trim(), topK: 10 })
   } catch {
     results.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+async function handleChat() {
+  if (!query.value.trim()) {
+    ElMessage.warning('请输入问题')
+    return
+  }
+  loading.value = true
+  chatAnswer.value = ''
+  chatRefs.value = []
+  try {
+    const res = await ragChat({ query: query.value.trim(), topK: 5 })
+    chatAnswer.value = res.answer?.trim() || '未生成有效回答，请稍后重试。'
+    chatRefs.value = (res.references || []).map((ref) => ({
+      docId: Number(ref.docId),
+      title: ref.title
+    }))
+  } catch (err: unknown) {
+    chatAnswer.value = ''
+    const msg = err instanceof Error ? err.message : '对话请求失败'
+    if (!msg.includes('登录已过期')) {
+      ElMessage.error(msg.includes('timeout') ? 'AI 回答超时，请稍后重试' : '对话请求失败，请检查网络或重新登录')
+    }
   } finally {
     loading.value = false
   }
@@ -144,9 +200,62 @@ async function handleSearch() {
   font-size: 15px;
 }
 
+.mode-tabs {
+  margin-bottom: 20px;
+}
+
 .search-box {
   max-width: 640px;
   margin: 0 auto;
+}
+
+.chat-answer {
+  margin-top: 28px;
+  padding: 24px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  min-height: 80px;
+}
+
+.chat-answer-body {
+  line-height: 1.75;
+}
+
+.chat-answer-body :deep(p) {
+  margin: 0 0 12px;
+}
+
+.chat-answer-body :deep(ol),
+.chat-answer-body :deep(ul) {
+  margin: 0 0 12px;
+  padding-left: 1.4em;
+}
+
+.chat-answer-body :deep(pre) {
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.chat-answer-body :deep(code) {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.chat-refs {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.ref-tag {
+  cursor: pointer;
 }
 
 :deep(.search-box .el-input__wrapper) {

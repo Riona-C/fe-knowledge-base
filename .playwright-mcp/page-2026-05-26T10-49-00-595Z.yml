@@ -1,0 +1,64 @@
+- generic [ref=e31]:
+  - complementary [ref=e32]:
+    - generic [ref=e33] [cursor=pointer]:
+      - img [ref=e35]
+      - generic [ref=e38]: 前端知识库
+    - menubar [ref=e39]:
+      - menuitem "首页" [ref=e40] [cursor=pointer]:
+        - img [ref=e42]
+        - generic [ref=e44]: 首页
+      - menuitem "知识库" [ref=e45]:
+        - generic [ref=e46] [cursor=pointer]:
+          - img [ref=e48]
+          - generic [ref=e50]: 知识库
+          - img [ref=e52]
+      - menuitem "智能检索" [ref=e54] [cursor=pointer]:
+        - img [ref=e56]
+        - generic [ref=e58]: 智能检索
+      - menuitem "文档审核" [ref=e59] [cursor=pointer]:
+        - img [ref=e61]
+        - generic [ref=e63]: 文档审核
+      - menuitem "钉钉采集" [ref=e64]:
+        - generic [ref=e65] [cursor=pointer]:
+          - img [ref=e67]
+          - generic [ref=e70]: 钉钉采集
+          - img [ref=e72]
+      - menuitem "系统管理" [ref=e74]:
+        - generic [ref=e75] [cursor=pointer]:
+          - img [ref=e77]
+          - generic [ref=e79]: 系统管理
+          - img [ref=e81]
+  - generic [ref=e83]:
+    - generic [ref=e84]:
+      - generic [ref=e85]:
+        - img [ref=e87] [cursor=pointer]
+        - navigation "面包屑" [ref=e89]:
+          - link "智能检索" [ref=e91]
+      - generic [ref=e92]:
+        - generic [ref=e93]: 系
+        - generic [ref=e94]: 系统管理员
+        - button "退出" [ref=e95] [cursor=pointer]:
+          - generic [ref=e96]: 退出
+    - main [ref=e97]:
+      - generic [ref=e99]:
+        - heading "智能检索" [level=1] [ref=e100]
+        - paragraph [ref=e101]: 输入您的问题，AI 将从知识库中为您找到最相关的解决方案
+        - radiogroup "radio-group" [ref=e102]:
+          - generic [ref=e103]:
+            - radio "文档检索" [ref=e104]
+            - generic [ref=e105] [cursor=pointer]: 文档检索
+          - generic [ref=e106]:
+            - radio "对话问答" [checked] [ref=e107]
+            - generic [ref=e108] [cursor=pointer]: 对话问答
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - textbox "例如：Vue3 如何实现路由守卫？" [ref=e112]: 页面白屏问题
+            - img [ref=e122] [cursor=pointer]
+          - generic [ref=e114]:
+            - button "提问" [disabled]:
+              - generic:
+                - img
+              - generic:
+                - generic:
+                  - img
+                - text: 提问

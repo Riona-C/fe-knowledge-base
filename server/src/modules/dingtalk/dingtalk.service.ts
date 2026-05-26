@@ -6,12 +6,17 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import Redis from 'ioredis';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DWClient, DWClientDownStream, TOPIC_ROBOT } from 'dingtalk-stream';
 import OpenAI from 'openai';
 import { Repository } from 'typeorm';
 import { APP_CONFIG, AppConfig } from '../../config';
+import { SYSTEM_USER_ID } from '../../common/constants';
+import { REDIS_CLIENT } from '../../common/providers/redis.module';
+import { decryptSecret, encryptSecret } from '../../common/utils/crypto.util';
 import { ApiResponse } from '../../common/dto/api-response';
 import { CategoryEntity } from '../../entities/category.entity';
 import { DingtalkConfigEntity } from '../../entities/dingtalk-config.entity';
@@ -68,6 +73,7 @@ export class DingtalkService implements OnModuleInit {
 
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
     @InjectRepository(CategoryEntity)
     private readonly categoryRepo: Repository<CategoryEntity>,
     @InjectRepository(DingtalkConfigEntity)
@@ -93,19 +99,31 @@ export class DingtalkService implements OnModuleInit {
     }
   }
 
-  /** 获取钉钉配置 */
+  /** 获取钉钉配置（API 脱敏） */
   async getConfig() {
-    const config = await this.configRepo.find({ take: 1, order: { id: 'ASC' } });
-    return config[0] ?? null;
+    const config = await this.getConfigEntity();
+    if (!config) {
+      return null;
+    }
+    return {
+      ...config,
+      appSecret: config.appSecret ? '********' : '',
+    };
   }
 
   /** 更新钉钉配置 */
   async updateConfig(dto: UpdateDingtalkConfigDto) {
-    let config = await this.getConfig();
+    let config = await this.getConfigEntity();
+    const payload = { ...dto };
+    if (payload.appSecret?.includes('*')) {
+      delete (payload as { appSecret?: string }).appSecret;
+    } else if (payload.appSecret) {
+      payload.appSecret = encryptSecret(payload.appSecret, this.getEncryptKey());
+    }
     if (!config) {
-      config = this.configRepo.create(dto);
+      config = this.configRepo.create(payload);
     } else {
-      Object.assign(config, dto);
+      Object.assign(config, payload);
     }
     const saved = await this.configRepo.save(config);
 
@@ -196,7 +214,7 @@ export class DingtalkService implements OnModuleInit {
 
     this.streamClient = new DWClient({
       clientId: cfg.appKey,
-      clientSecret: cfg.appSecret,
+      clientSecret: this.decryptAppSecret(cfg.appSecret),
       keepAlive: true,
       debug: false,
     });
@@ -326,8 +344,7 @@ export class DingtalkService implements OnModuleInit {
   }
 
   private async getActiveConfig() {
-    const config = await this.getConfig();
-    return config?.enable === 1 ? config : config;
+    return this.getConfigEntity();
   }
 
   private async findMessage(id: number): Promise<DingtalkMessageEntity> {
@@ -488,7 +505,7 @@ export class DingtalkService implements OnModuleInit {
       tags: result.tags || '',
       source: 2,
       status: 0,
-      createUserId: 1,
+      createUserId: SYSTEM_USER_ID,
       deleted: 0,
     });
     const saved = await this.docRepo.save(doc);
@@ -696,14 +713,20 @@ export class DingtalkService implements OnModuleInit {
       .join('\n');
   }
 
-  /** 获取钉钉 AccessToken（带缓存） */
+  /** 获取钉钉 AccessToken（内存 + Redis 双缓存） */
   private async getDingtalkAccessToken(): Promise<string | null> {
+    const cacheKey = 'dingtalk:access_token';
+    const cachedRedis = await this.redis.get(cacheKey);
+    if (cachedRedis) {
+      return cachedRedis;
+    }
     if (this.dingtalkAccessToken && Date.now() < this.dingtalkTokenExpireAt) {
       return this.dingtalkAccessToken;
     }
 
-    const cfg = await this.getConfig();
-    if (!cfg?.appKey || !cfg?.appSecret) {
+    const cfg = await this.getConfigEntity();
+    const appSecret = cfg?.appSecret ? this.decryptAppSecret(cfg.appSecret) : '';
+    if (!cfg?.appKey || !appSecret) {
       return null;
     }
 
@@ -715,7 +738,7 @@ export class DingtalkService implements OnModuleInit {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             appKey: cfg.appKey,
-            appSecret: cfg.appSecret,
+            appSecret,
           }),
         },
       );
@@ -724,9 +747,10 @@ export class DingtalkService implements OnModuleInit {
         expireIn?: number;
       };
       if (data.accessToken) {
+        const ttl = Math.max(60, (data.expireIn ?? 7200) - 120);
         this.dingtalkAccessToken = data.accessToken;
-        this.dingtalkTokenExpireAt =
-          Date.now() + (data.expireIn ?? 7200) * 1000 - 60_000;
+        this.dingtalkTokenExpireAt = Date.now() + ttl * 1000;
+        await this.redis.setex(cacheKey, ttl, data.accessToken);
         return this.dingtalkAccessToken;
       }
       this.logger.warn('获取钉钉 AccessToken 失败', data);
@@ -807,10 +831,15 @@ export class DingtalkService implements OnModuleInit {
 
     const raw = completion.choices[0]?.message?.content ?? '{}';
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    const parsed = JSON.parse(
-      jsonMatch ? jsonMatch[0] : raw,
-    ) as AutoDetectAiResult;
-    return parsed;
+    try {
+      const parsed = JSON.parse(
+        jsonMatch ? jsonMatch[0] : raw,
+      ) as AutoDetectAiResult;
+      return parsed;
+    } catch (err) {
+      this.logger.warn(`AI 响应 JSON 解析失败: ${err}`);
+      return { skip: true };
+    }
   }
 
   /** 根据 AI 返回的分类名匹配分类ID，匹配不上则用默认分类 */
@@ -870,74 +899,145 @@ export class DingtalkService implements OnModuleInit {
       .map((k) => k.trim())
       .filter(Boolean);
 
-    const unprocessed = await this.messageRepo.find({
-      where: { handleStatus: 0 },
-      order: { sendTime: 'ASC' },
-    });
-
-    if (unprocessed.length === 0) {
-      return { scanned: 0, matched: 0, generated: 0 };
-    }
-
     let matched = 0;
     let generated = 0;
+    let scanned = 0;
     const processedConvs = new Set<string>();
+    const batchSize = 50;
+    let offset = 0;
 
-    for (const msg of unprocessed) {
-      if (!this.matchKeywords(msg.msgContent, keywords)) {
-        continue;
+    while (true) {
+      const batch = await this.messageRepo.find({
+        where: { handleStatus: 0 },
+        order: { sendTime: 'ASC' },
+        skip: offset,
+        take: batchSize,
+      });
+      if (batch.length === 0) {
+        break;
       }
-      matched++;
+      offset += batch.length;
+      scanned += batch.length;
 
-      // 同一会话只处理一次
-      const convKey = msg.conversationId || `single_${msg.id}`;
-      if (processedConvs.has(convKey)) {
-        continue;
-      }
-      processedConvs.add(convKey);
-
-      try {
-        const contextText = await this.gatherContextText(msg);
-        const categories = await this.getAllCategories();
-        const result = await this.extractWithAutoDetect(contextText, categories);
-
-        if (result.skip || !result.title || !result.problem) {
-          this.logger.log(`批量扫描：AI判定无效内容，跳过会话 ${convKey}`);
+      for (const msg of batch) {
+        if (!this.matchKeywords(msg.msgContent, keywords)) {
           continue;
         }
+        matched++;
 
-        const categoryId = await this.resolveCategoryId(result.categoryName, categories);
-        const doc = this.docRepo.create({
-          categoryId,
-          title: result.title,
-          problem: result.problem,
-          solution: result.solution || '待补充',
-          tags: result.tags || '',
-          source: 2,
-          status: 0,
-          createUserId: 1,
-          deleted: 0,
-        });
-        const saved = await this.docRepo.save(doc);
-        this.eventEmitter.emit('doc.created', { docId: saved.id });
+        const convKey = msg.conversationId || `single_${msg.id}`;
+        if (processedConvs.has(convKey)) {
+          continue;
+        }
+        processedConvs.add(convKey);
 
-        const dbMessages = await this.gatherContextFromDb(msg);
-        const messageIds = dbMessages.map((m) => m.id);
-        await this.messageRepo
-          .createQueryBuilder()
-          .update()
-          .set({ handleStatus: 1, docId: saved.id })
-          .whereInIds(messageIds)
-          .execute();
+        try {
+          const contextText = await this.gatherContextText(msg);
+          const categories = await this.getAllCategories();
+          const result = await this.extractWithAutoDetect(contextText, categories);
 
-        generated++;
-        this.logger.log(`批量扫描生成文档: "${saved.title}", 分类ID=${categoryId}`);
-      } catch (err) {
-        this.logger.error(`批量扫描处理失败, 消息ID=${msg.id}`, err);
+          if (result.skip || !result.title || !result.problem) {
+            this.logger.log(`批量扫描：AI判定无效内容，跳过会话 ${convKey}`);
+            continue;
+          }
+
+          const categoryId = await this.resolveCategoryId(result.categoryName, categories);
+          const doc = this.docRepo.create({
+            categoryId,
+            title: result.title,
+            problem: result.problem,
+            solution: result.solution || '待补充',
+            tags: result.tags || '',
+            source: 2,
+            status: 0,
+            createUserId: SYSTEM_USER_ID,
+            deleted: 0,
+          });
+          const saved = await this.docRepo.save(doc);
+          this.eventEmitter.emit('doc.created', { docId: saved.id });
+
+          const dbMessages = await this.gatherContextFromDb(msg);
+          const messageIds = dbMessages.map((m) => m.id);
+          await this.messageRepo
+            .createQueryBuilder()
+            .update()
+            .set({ handleStatus: 1, docId: saved.id })
+            .whereInIds(messageIds)
+            .execute();
+
+          generated++;
+          this.logger.log(`批量扫描生成文档: "${saved.title}", 分类ID=${categoryId}`);
+        } catch (err) {
+          this.logger.error(`批量扫描处理失败, 消息ID=${msg.id}`, err);
+        }
       }
     }
 
-    return { scanned: unprocessed.length, matched, generated };
+    return { scanned, matched, generated };
+  }
+
+  /** 文档审核后钉钉通知（钉钉来源文档） */
+  @OnEvent('doc.audited')
+  async onDocAudited(payload: {
+    docId: number;
+    status: number;
+    auditRemark?: string;
+    title: string;
+    source: number;
+  }) {
+    if (payload.source !== 2) {
+      return;
+    }
+    const statusText = payload.status === 1 ? '已通过' : '已驳回';
+    const remark = payload.auditRemark ? `\n备注：${payload.auditRemark}` : '';
+    const messages = await this.messageRepo.find({
+      where: { docId: payload.docId },
+      take: 1,
+    });
+    const convId = messages[0]?.conversationId;
+    if (!convId) {
+      return;
+    }
+    const cfg = await this.getActiveConfig();
+    const robotCode = cfg?.robotCode || this.config.dingtalk.robotCode;
+    if (!robotCode) {
+      return;
+    }
+    const token = await this.getDingtalkAccessToken();
+    if (!token) {
+      return;
+    }
+    const text = `【知识库审核】文档「${payload.title}」${statusText}${remark}`;
+    try {
+      await fetch('https://api.dingtalk.com/v1.0/robot/groupMessages/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-acs-dingtalk-access-token': token,
+        },
+        body: JSON.stringify({
+          robotCode,
+          openConversationId: convId,
+          msgKey: 'sampleText',
+          msgParam: JSON.stringify({ content: text }),
+        }),
+      });
+    } catch (err) {
+      this.logger.warn(`审核通知发送失败 docId=${payload.docId}`, err);
+    }
+  }
+
+  private async getConfigEntity(): Promise<DingtalkConfigEntity | null> {
+    const rows = await this.configRepo.find({ take: 1, order: { id: 'ASC' } });
+    return rows[0] ?? null;
+  }
+
+  private getEncryptKey(): string {
+    return process.env.DINGTALK_ENCRYPT_KEY || this.config.jwt.secret;
+  }
+
+  private decryptAppSecret(stored: string): string {
+    return decryptSecret(stored, this.getEncryptKey());
   }
 
   /** 插入或更新系统配置 */
